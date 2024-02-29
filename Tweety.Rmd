@@ -1,0 +1,161 @@
+---
+title: "Tweety"
+author: "MIchał Trzaska, Dawid Serek"
+date: "2024-01-19"
+output: 
+  html_document:
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+---
+
+
+# Przygotowanie danych
+
+## Pakiety Pakiety jakich używamy:
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(dplyr)
+library(DT)
+library(plotly)
+library(summarytools)
+```
+
+## Ładowanie danych :
+
+link do danych:https://www.kaggle.com/datasets/paakhim10/tweets-and-engagement-metrics?fbclid=IwAR0W9nM07G7s2rcwMk-NiZqaxqq_qExUv6exxLMY2Y4gvOLNgnuQPnMWcj8
+
+Z strony pobralismy dane do pliku csv usuwamy również tu nie potrzbne kolumny
+```{r}
+tweets <- read.csv("tweets-engagement-metrics.csv")
+kolumny_do_usuniecia <- c("UserID", "LocationID","StateCode", "TweetID")
+tweets <- tweets[, -which(names(tweets) %in% kolumny_do_usuniecia)]
+```
+
+
+## Przegląd danych
+
+```{r}
+summary(tweets)
+
+```
+
+## Wybór danych
+
+```{r}
+# Wybierz kraj
+selected_country <- unique(tweets$Country)
+selected_country <- selected_country[1]
+
+# Wybierz płeć
+selected_gender <- unique(tweets$Gender)
+selected_gender <- selected_gender[1]
+
+```
+
+## Wizualizacja Częstości
+```{r}
+# Filtruj dane według wybranego kraju i płci
+filtered_data <- tweets %>%
+  filter(Country == selected_country, Gender == selected_gender) %>%
+  arrange(Hour)
+
+# Stwórz wykres słupkowy dla wizualizacji częstości
+freq_data <- table(filtered_data$Hour)  
+plot_ly(x = names(freq_data), y = freq_data, type = 'bar') %>%
+  layout(title = 'Ilość tweetów w zależności od pory dnia',
+         xaxis = list(title = 'Wartości', categoryorder = 'array', categoryarray = 1),
+         yaxis = list(title = 'Częstość'))
+
+```
+
+## Przykładowe Tweety
+```{r}
+# Wygeneruj przykładowe 10 tweetów
+head(filtered_data, 10)
+
+```
+
+# Statystyki
+
+## Statystyki Sentymentu
+```{r}
+# Pobierz wybraną kolumnę z danych
+selected_sentiment <- filtered_data$Sentiment
+
+# Oblicz wybrane statystyki za pomocą dplyr
+sentiment_stats <- data.frame(
+  Statystyka = c(
+    "Średnia", "Mediana", "Odchylenie standardowe", "Minimum", "Maksimum", "n"
+  ),
+  Wartość = c(
+    mean(selected_sentiment),
+    median(selected_sentiment),
+    round(sd(selected_sentiment), 2),  # Zaokrąglanie SD do 2 miejsc po przecinku
+    min(selected_sentiment),
+    max(selected_sentiment),
+    length(selected_sentiment)
+  )
+)
+
+# Wyświetl statystyki w formie tabeli DataTable
+datatable(sentiment_stats, options = list(dom = 't'), rownames = FALSE)
+
+```
+
+
+## Statystyki retwet'ów
+```{r}
+# Pobierz wybraną kolumnę z danych
+selected_retweets <- filtered_data$RetweetCount
+
+# Oblicz wybrane statystyki za pomocą dplyr
+retweets_stats <- data.frame(
+  Statystyka = c(
+    "Średnia", "Mediana", "Odchylenie standardowe", "Minimum", "Maksimum", "n"
+  ),
+  Wartość = c(
+    mean(selected_retweets),
+    median(selected_retweets),
+    round(sd(selected_retweets), 2),  # Zaokrąglanie SD do 2 miejsc po przecinku
+    min(selected_retweets),
+    max(selected_retweets),
+    length(selected_retweets)
+  )
+)
+
+# Wyświetl statystyki w formie tabeli DataTable
+datatable(retweets_stats, options = list(dom = 't'), rownames = FALSE)
+
+```
+
+# Analiza Wariancji
+```{r}
+# Analiza wariancji dla wybranej zmiennej
+selected_variable <- "Sentiment"
+anova_results <- aov(
+  as.formula(paste0(selected_variable, " ~ Gender")), 
+  data = tweets
+)
+summary(anova_results)
+
+```
+
+
+# Histogramy
+
+## Histogram Sentymentu
+```{r}
+# Stwórz histogram dla zmiennej Sentiment
+hist(selected_sentiment, main = "Histogram Sentymentu", xlab = "Sentyment", col = "lightblue", border = "black")
+
+```
+
+## Histogram Retweetów
+```{r}
+# Stwórz histogram dla zmiennej RetweetCount
+hist(selected_retweets, main = "Histogram Retweetów", xlab = "Retweety", col = "lightgreen", border = "black")
+
+```
+
